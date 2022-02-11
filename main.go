@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/veritas-L2/merkle-patricia-trie/src/mpt"
 )
 
 
@@ -11,29 +12,31 @@ type SCState = map[string] string
 
 type StateContract struct {
 	contractapi.Contract
-	state SCState
+	state mpt.Trie
 }
 
 
-func (s *StateContract) InitStateContract(ctx contractapi.TransactionContextInterface) (SCState, error){
-	s.state = make(map[string]string)
-	s.state["hello"] = "world";
-	
+func (s *StateContract) InitStateContract(ctx contractapi.TransactionContextInterface) (mpt.Trie, error){
+	s.state = *mpt.NewTrie() 
+	s.state.Put([]byte("Hello"), []byte("World"))
+
 	return s.state, nil
 }
 
-func (s *StateContract) PutState(ctx contractapi.TransactionContextInterface, key string, value string) (SCState, error){
-	s.state[key] = value
+func (s *StateContract) PutState(ctx contractapi.TransactionContextInterface, key string, value string) (mpt.Trie, error){
+	s.state.Put([]byte(key), []byte(value))
+
 	return s.state, nil
 }
 
-func (s *StateContract) DeleteState(ctx contractapi.TransactionContextInterface, key string) (SCState, error){
-	delete(s.state, key)
-	return s.state, nil
+func (s *StateContract) DeleteState(ctx contractapi.TransactionContextInterface, key string) ([]byte, bool){
+	s.state.Put([]byte(key), []byte(nil))
+
+	return s.state.Get([]byte(key))
 }
 
-func (s *StateContract) GetState(ctx contractapi.TransactionContextInterface, key string) (string, error){
-	return s.state[key], nil
+func (s *StateContract) GetState(ctx contractapi.TransactionContextInterface, key string) ([]byte, bool){
+	return s.state.Get([]byte(key))
 }
 
 func main() {
