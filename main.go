@@ -16,33 +16,46 @@ type StateContract struct {
 }
 
 
-func (s *StateContract) InitStateContract(ctx contractapi.TransactionContextInterface) (mpt.Trie, error){
+func (s *StateContract) InitStateContract(ctx contractapi.TransactionContextInterface) (error){
 	s.state = *mpt.NewTrie() 
-	s.state.Put([]byte("Hello"), []byte("World"))
 
-	return s.state, nil
+	return nil
 }
 
-func (s *StateContract) PutState(ctx contractapi.TransactionContextInterface, key string, value string) (mpt.Trie, error){
+func (s *StateContract) PutState(ctx contractapi.TransactionContextInterface, key string, value string) (string, error){
 	s.state.Put([]byte(key), []byte(value))
+	res, found := s.state.Get([]byte(key))
 
-	return s.state, nil
+	if (!found){
+		return "", fmt.Errorf("failed to find key %s in world state", key)
+	}
+
+	return string(res), nil
 }
 
-func (s *StateContract) DeleteState(ctx contractapi.TransactionContextInterface, key string) ([]byte, bool){
+func (s *StateContract) DeleteState(ctx contractapi.TransactionContextInterface, key string) (string, error){
 	s.state.Put([]byte(key), []byte(nil))
+	res, found := s.state.Get([]byte(key))
 
-	return s.state.Get([]byte(key))
+	if (!found){
+		return "", fmt.Errorf("failed to find key %s in world state", key)
+	}
+
+	return string(res) , nil
 }
 
-func (s *StateContract) GetState(ctx contractapi.TransactionContextInterface, key string) ([]byte, bool){
-	return s.state.Get([]byte(key))
+func (s *StateContract) GetState(ctx contractapi.TransactionContextInterface, key string) (string, error){
+	res, found := s.state.Get([]byte(key))
+
+	if (!found){
+		return "", fmt.Errorf("failed to find key %s in world state", key)
+	}
+
+	return string(res), nil
 }
 
 func main() {
 	chaincode, err := contractapi.NewChaincode(new(StateContract))
-
-	fmt.Println("Starting chaincode...")
 
 	if err != nil {
 		fmt.Printf("Error create statecontract chaincode: %s", err.Error())
@@ -53,7 +66,3 @@ func main() {
 		fmt.Printf("Error starting statecontract chaincode: %s", err.Error())
 	}
 }
-
-/*
-Memory remains active till contract crashes it runs an instance of the struct
-*/
