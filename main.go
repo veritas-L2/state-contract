@@ -1,11 +1,11 @@
-package main
+package statecontract
 
 import (
 	"bytes"
 	"fmt"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
-	"github.com/veritas-L2/merkle-patricia-trie/src/mpt"
+	mpt "github.com/veritas-L2/merkle-patricia-trie/src"
 )
 
 
@@ -17,13 +17,10 @@ type StateContract struct {
 	lockOwner []byte
 }
 
-
 func (s *StateContract) InitStateContract(ctx contractapi.TransactionContextInterface) (error){
 	if(s.lockOwner != nil){
 		return fmt.Errorf("failed to acquire lock on state contract")
 	}
-	
-	s.state = *mpt.NewTrie()
 	
 	client, err  := ctx.GetClientIdentity().GetID()
 	if (err != nil){
@@ -46,9 +43,9 @@ func (s *StateContract) PutState(ctx contractapi.TransactionContextInterface, ke
 	}
 	
 	s.state.Put([]byte(key), []byte(value))
-	res, found := s.state.Get([]byte(key))
+	res := s.state.Get([]byte(key))
 
-	if (!found){
+	if (res == nil){
 		return "", fmt.Errorf("failed to find key %s in world state", key)
 	}
 
@@ -66,9 +63,9 @@ func (s *StateContract) DeleteState(ctx contractapi.TransactionContextInterface,
 	}
 	
 	s.state.Put([]byte(key), []byte(nil))
-	res, found := s.state.Get([]byte(key))
+	res := s.state.Get([]byte(key))
 
-	if (!found){
+	if (res == nil){
 		return "", fmt.Errorf("failed to find key %s in world state", key)
 	}
 
@@ -85,9 +82,9 @@ func (s *StateContract) GetState(ctx contractapi.TransactionContextInterface, ke
 		return "", fmt.Errorf("failed to get state. lock not acquired by client")
 	}
 	
-	res, found := s.state.Get([]byte(key))
+	res := s.state.Get([]byte(key))
 
-	if (!found){
+	if (res == nil){
 		return "", fmt.Errorf("failed to find key %s in world state", key)
 	}
 
@@ -105,7 +102,7 @@ func (s* StateContract) ReleaseStateContract(ctx contractapi.TransactionContextI
 	}
 
 	s.lockOwner = nil
-	s.state = *mpt.NewTrie()
+	s.state = *mpt.NewTrie(0)
 
 	return nil
 }
