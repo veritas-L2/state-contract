@@ -1,4 +1,4 @@
-package statecontract
+package main
 
 import (
 	"bytes"
@@ -15,6 +15,7 @@ type StateContract struct {
 	contractapi.Contract
 	state mpt.Trie
 	lockOwner []byte
+	db Database
 }
 
 func (s *StateContract) InitStateContract(ctx contractapi.TransactionContextInterface) (error){
@@ -26,8 +27,11 @@ func (s *StateContract) InitStateContract(ctx contractapi.TransactionContextInte
 	if (err != nil){
 		return fmt.Errorf("failed to retrieve client's identity. %s", err.Error())
 	}
-
 	s.lockOwner = []byte(client)
+
+	s.state = *mpt.NewTrie(mpt.MODE_NORMAL)
+	s.db = *NewDatabase(ctx)
+	s.state.LoadFromDB(&s.db)
 
 	return nil
 }
@@ -43,10 +47,10 @@ func (s *StateContract) PutState(ctx contractapi.TransactionContextInterface, ke
 	}
 	
 	s.state.Put([]byte(key), []byte(value))
-	res := s.state.Get([]byte(key))
 
+	res := s.state.Get([]byte(key))
 	if (res == nil){
-		return "", fmt.Errorf("failed to find key %s in world state", key)
+		return "", fmt.Errorf("failed to find key %s in contract state", key)
 	}
 
 	return string(res), nil
@@ -62,12 +66,12 @@ func (s *StateContract) DeleteState(ctx contractapi.TransactionContextInterface,
 		return "", fmt.Errorf("failed to delete state. lock not acquired by client")
 	}
 	
-	s.state.Put([]byte(key), []byte(nil))
 	res := s.state.Get([]byte(key))
-
 	if (res == nil){
-		return "", fmt.Errorf("failed to find key %s in world state", key)
+		return "", fmt.Errorf("failed to find key %s in contract state", key)
 	}
+
+	s.state.Put([]byte(key), nil)
 
 	return string(res) , nil
 }
@@ -83,9 +87,8 @@ func (s *StateContract) GetState(ctx contractapi.TransactionContextInterface, ke
 	}
 	
 	res := s.state.Get([]byte(key))
-
 	if (res == nil){
-		return "", fmt.Errorf("failed to find key %s in world state", key)
+		return "", fmt.Errorf("failed to find key %s in contract state", key)
 	}
 
 	return string(res), nil
@@ -98,11 +101,13 @@ func (s* StateContract) ReleaseStateContract(ctx contractapi.TransactionContextI
 	}
 	
 	if (s.lockOwner == nil || !bytes.Equal(s.lockOwner, []byte(client))){
-		fmt.Errorf("failed to release state contract. lock not acquired by client")
+		return fmt.Errorf("failed to release state contract. lock not acquired by client")
 	}
 
+	s.state.SaveToDB(&s.db)
+	
 	s.lockOwner = nil
-	s.state = *mpt.NewTrie(0)
+	s.state = *mpt.NewTrie(mpt.MODE_NORMAL)
 
 	return nil
 }

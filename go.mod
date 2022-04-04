@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/hyperledger/fabric-contract-api-go v1.1.1
-	github.com/veritas-L2/merkle-patricia-trie v0.0.0-20220202171358-970aaa6ab181
+	github.com/veritas-L2/merkle-patricia-trie v0.0.0-20220404045643-1fc116276c3a
 )
 
 require (
