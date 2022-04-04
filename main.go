@@ -15,7 +15,6 @@ type StateContract struct {
 	contractapi.Contract
 	state mpt.Trie
 	lockOwner []byte
-	db Database
 }
 
 func (s *StateContract) InitStateContract(ctx contractapi.TransactionContextInterface) (error){
@@ -30,8 +29,9 @@ func (s *StateContract) InitStateContract(ctx contractapi.TransactionContextInte
 	s.lockOwner = []byte(client)
 
 	s.state = *mpt.NewTrie(mpt.MODE_NORMAL)
-	s.db = *NewDatabase(ctx)
-	s.state.LoadFromDB(&s.db)
+
+	db := *NewDatabase(ctx)
+	s.state.LoadFromDB(&db)
 
 	return nil
 }
@@ -104,7 +104,8 @@ func (s* StateContract) ReleaseStateContract(ctx contractapi.TransactionContextI
 		return fmt.Errorf("failed to release state contract. lock not acquired by client")
 	}
 
-	s.state.SaveToDB(&s.db)
+	db := *NewDatabase(ctx)
+	s.state.SaveToDB(&db)
 	
 	s.lockOwner = nil
 	s.state = *mpt.NewTrie(mpt.MODE_NORMAL)
