@@ -88,7 +88,7 @@ func (s *StateContract) GetState(ctx contractapi.TransactionContextInterface, ke
 	
 	res := s.state.Get([]byte(key))
 	if (res == nil){
-		return "", fmt.Errorf("failed to find key %s in contract state", key)
+		return "", nil
 	}
 
 	return string(res), nil
