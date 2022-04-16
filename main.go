@@ -113,17 +113,17 @@ func (s* StateContract) ReleaseStateContract(ctx contractapi.TransactionContextI
 	return nil
 }
 
-func (s *StateContract) GetRootHash(ctx contractapi.TransactionContextInterface) ([]byte, error){
+func (s *StateContract) GetRootHash(ctx contractapi.TransactionContextInterface) (string, error){
 	client, err  := ctx.GetClientIdentity().GetID()
 	if (err != nil){
-		return nil, fmt.Errorf("failed to retrieve client's identity. %s", err.Error())
+		return "", fmt.Errorf("failed to retrieve client's identity. %s", err.Error())
 	}
 	
 	if (s.lockOwner == nil || !bytes.Equal(s.lockOwner, []byte(client))){
-		return nil, fmt.Errorf("failed to release state contract. lock not acquired by client")
+		return "", fmt.Errorf("failed to release state contract. lock not acquired by client")
 	}
 
-	return s.state.Hash(), nil;
+	return string(s.state.Hash()), nil;
 }
 
 func main() {
